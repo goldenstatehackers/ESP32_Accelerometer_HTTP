@@ -74,7 +74,8 @@ void loop()
 
 }
 
-// Check for interrupt from the accelerometer
+/**@brief Check for interrupt from the accelerometer
+ */
 void gap_check(int16_t accelerate_value)
 {
   Serial.print("\n");
@@ -94,7 +95,8 @@ void gap_check(int16_t accelerate_value)
   
 }
 
-// Reads 20 values from accelerometer and takes highest one. 
+/**@brief Reads 20 values from accelerometer and takes highest one. 
+ */
 void read_average_data()
 {
   int16_t  maximum = 0;
@@ -116,7 +118,8 @@ void read_average_data()
   
 }
 
-// get raw data from accelerometer MPU6050
+/**@brief get raw data from accelerometer MPU6050
+ */
 int16_t get_accel_data()
 {
       Wire.beginTransmission(MPU6050_addr);
@@ -164,3 +167,119 @@ void http_post()
  
   delay(1000);
 }
+
+
+
+/* ************************************************* GPS SIMULATION */
+
+/**@brief Date and Time structure. */
+typedef struct
+{
+    uint16_t year;
+    uint8_t  month;
+    uint8_t  day;
+    uint8_t  hours;
+    uint8_t  minutes;
+    uint8_t  seconds;
+} date_time_t;
+
+
+/**@brief   Location and Speed data structure. */
+struct lns_loc_speed_s
+{
+    bool                            utc_time_time_present;                     /**< UTC Time present (0=not present, 1=present). */
+   
+    uint16_t                        instant_speed;                             /**< Instantaneous Speed (km/h). */
+
+    int32_t                         latitude;                                  /**< Latitude (10e-7 degrees). */
+    int32_t                         longitude;                                 /**< Longitude (10e-7 degrees). */
+
+    date_time_t                 utc_time;                                  /**< UTC Time. */
+};
+
+
+lns_loc_speed_s m_sim_location_speed = 
+{
+    .utc_time_time_present = true,
+  
+    .instant_speed           = 60,         // = 60 km/h
+
+    .latitude                = -103123567, // = -10.3123567 degrees
+    .longitude               = 601234567,  // = 60.1234567 degrees
+
+    .utc_time                = {
+                                 .year    = 2019,
+                                 .month   = 3,
+                                 .day     = 17,
+                                 .hours   = 11,
+                                 .minutes = 23,
+                                 .seconds = 33
+                               }
+};
+
+void date_time_print()
+{
+  Serial.print (m_sim_location_speed.utc_time.year);
+  Serial.print("\n");
+  Serial.print (m_sim_location_speed.utc_time.month);
+  Serial.print("\n");
+  Serial.print (m_sim_location_speed.utc_time.day);
+  Serial.print("\n");
+  Serial.print (m_sim_location_speed.utc_time.hours);
+  Serial.print("\n");
+  Serial.print (m_sim_location_speed.utc_time.minutes);
+  Serial.print("\n");
+  Serial.print (m_sim_location_speed.utc_time.seconds);
+  Serial.print("\n");
+}
+
+void loc_simulation_print()
+{
+   Serial.print(m_sim_location_speed.latitude);
+   Serial.print("\n");
+   Serial.print(m_sim_location_speed.longitude);
+   Serial.print("\n");
+   date_time_print();
+}
+
+/**@brief Provide simulated location and speed.
+ */
+void loc_speed_simulation_update(void)
+{
+    m_sim_location_speed.latitude++;
+    m_sim_location_speed.longitude++;
+
+    increment_time(&m_sim_location_speed.utc_time);
+}
+
+
+
+void increment_time(date_time_t * p_time)
+{
+    p_time->seconds++;
+    if (p_time->seconds > 59)
+    {
+        p_time->seconds = 0;
+        p_time->minutes++;
+        if (p_time->minutes > 59)
+        {
+            p_time->minutes = 0;
+            p_time->hours++;
+            if (p_time->hours > 24)
+            {
+                p_time->hours = 0;
+                p_time->day++;
+                if (p_time->day > 31)
+                {
+                    p_time->day = 0;
+                    p_time->month++;
+                    if (p_time->month > 12)
+                    {
+                        p_time->year++;
+                    }
+                }
+            }
+        }
+    }
+}
+
